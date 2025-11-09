@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f7f7f7;
+    }
+    h1 { color: #333; }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+    }
+    #googleSignInBtn { background-color: #4285F4; color: white; }
+    #signOutBtn { background-color: #d9534f; color: white; }
+    #adminContent {
+      display: none;
+      margin-top: 30px;
+      padding: 20px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    body.admin-logged-in #adminContent {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Admin Login</h1>
+  <p id="status">Checking login...</p>
+  <button id="googleSignInBtn">Sign in with Google</button>
+  <button id="signOutBtn">Sign Out</button>
+
+  <div id="adminContent">
+    <h2>Welcome, Admin!</h2>
+    <p>You are logged in as the authorized account.</p>
+    <p>You can now manage your data or add more controls here.</p>
+  </div>
+
+  <script type="module">
+    // Import Firebase SDKs from the CDN
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+    // 🔧 Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAOmwkVoRJL98p6MrGyF7WjHjHQ84v8he4",
+      authDomain: "messages-5d8fa.firebaseapp.com",
+      projectId: "messages-5d8fa",
+      storageBucket: "messages-5d8fa.firebasestorage.app",
+      messagingSenderId: "285093211755",
+      appId: "1:285093211755:web:e45371038cf265769f0b2e",
+      measurementId: "G-1XDBNNRKSD"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    // 🧑‍💻 Replace with *your* Google account email
+    const ADMIN_EMAIL = "YOUR_EMAIL@gmail.com"; // <--- CHANGE THIS
+
+    // ------------------------------
+    // 🔐 Google Sign-In
+    // ------------------------------
+    document.getElementById("googleSignInBtn").addEventListener("click", async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+
+        if (user.email !== ADMIN_EMAIL) {
+          alert("Access denied. Only the admin can sign in.");
+          await signOut(auth);
+        }
+      } catch (error) {
+        console.error("Error signing in:", error);
+        alert("Sign-in failed.");
+      }
+    });
+
+    // 🔓 Sign Out
+    document.getElementById("signOutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      document.getElementById("status").textContent = "Signed out.";
+      document.body.classList.remove("admin-logged-in");
+    });
+
+    // ------------------------------
+    // 👀 Watch for login state
+    // ------------------------------
+    onAuthStateChanged(auth, (user) => {
+      const status = document.getElementById("status");
+
+      if (user && user.email === ADMIN_EMAIL) {
+        status.textContent = `✅ Logged in as admin: ${user.email}`;
+        document.body.classList.add("admin-logged-in");
+      } else if (user && user.email !== ADMIN_EMAIL) {
+        status.textContent = "❌ Not authorized.";
+        document.body.classList.remove("admin-logged-in");
+        signOut(auth);
+      } else {
+        status.textContent = "Not signed in.";
+        document.body.classList.remove("admin-logged-in");
+      }
+    });
+  </script>
+</body>
+</html>
