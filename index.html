@@ -1,189 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Family Global Chat</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding-top: 50px;
-    }
-    .container {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      width: 400px;
-    }
-    input, button, textarea {
-      width: 100%;
-      padding: 8px;
-      margin: 5px 0;
-      box-sizing: border-box;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .message { font-size: 0.9em; margin-top: 5px; }
-    #chatBox {
-      border: 1px solid #ccc;
-      height: 200px;
-      overflow-y: scroll;
-      padding: 5px;
-      margin-bottom: 10px;
-    }
-    .chatMessage { margin-bottom: 8px; }
-    .chatMessage strong { color: #007bff; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Global Chat</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 50px;
+  }
+  .container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    width: 400px;
+  }
+  input, button, textarea {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+    box-sizing: border-box;
+  }
+  button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  button:hover { background-color: #0056b3; }
+  .message { font-size: 0.9em; margin-top: 5px; }
+  #chatBox { border: 1px solid #ccc; height: 200px; overflow-y: scroll; padding: 5px; margin-bottom: 10px; }
+  .chatMessage { margin-bottom: 8px; }
+  .chatMessage strong { color: #007bff; }
+</style>
 </head>
 <body>
 
-  <!-- Login/Register -->
-  <div class="container" id="loginContainer">
-    <h2>Login / Register</h2>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button id="loginBtn">Login</button>
-    <button id="registerBtn">Register</button>
-    <p id="loginMessage" class="message"></p>
-  </div>
+<!-- Login/Register -->
+<div class="container" id="loginContainer">
+  <h2>Login / Register</h2>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <button id="loginBtn">Login</button>
+  <button id="registerBtn">Register</button>
+  <button id="googleBtn">Login with Google</button>
+  <p id="loginMessage" class="message"></p>
+</div>
 
-  <!-- Global Chat -->
-  <div class="container" id="chatContainer" style="display:none;">
-    <h2 id="welcomeMsg"></h2>
-    <div id="chatBox"></div>
-    <textarea id="messageInput" placeholder="Type your message"></textarea>
-    <button id="sendBtn">Send</button>
-    <button id="logoutBtn">Logout</button>
-  </div>
+<!-- Global Chat -->
+<div class="container" id="chatContainer" style="display:none;">
+  <h2 id="welcomeMsg"></h2>
+  <div id="chatBox"></div>
+  <textarea id="messageInput" placeholder="Type your message"></textarea>
+  <button id="sendBtn">Send</button>
+  <button id="logoutBtn">Logout</button>
+</div>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <script>
-    // ===== Firebase Config =====
-    const firebaseConfig = {
-      apiKey: "AIzaSyAOmwkVoRJL98p6MrGyF7WjHjHQ84v8he4",
-      authDomain: "messages-5d8fa.firebaseapp.com",
-      projectId: "messages-5d8fa",
-      storageBucket: "messages-5d8fa.appspot.com",
-      messagingSenderId: "285093211755",
-      appId: "1:285093211755:web:e45371038cf265769f0b2e",
-      measurementId: "G-1XDBNNRKSD"
-    };
+<script>
+  // ===== Firebase Config =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyAOmwkVoRJL98p6MrGyF7WjHjHQ84v8he4",
+    authDomain: "messages-5d8fa.firebaseapp.com",
+    projectId: "messages-5d8fa",
+    storageBucket: "messages-5d8fa.appspot.com",
+    messagingSenderId: "285093211755",
+    appId: "1:285093211755:web:e45371038cf265769f0b2e",
+    measurementId: "G-1XDBNNRKSD"
+  };
 
-    // ===== Initialize Firebase =====
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+  // ===== Initialize Firebase =====
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-    // ===== Custom welcome messages per user email (optional) =====
-    const userMessages = {
-      "winston@gmail.com": "Welcome back, Winston! Hope you’re having a great day!",
-      "april@gmail.com": "Hi April! Glad to see you again 🌸",
-      "guest@gmail.com": "Hello guest! Enjoy your visit!",
-      "ken@gmail.com": "Hey Ken! Ready to take on the day?"
-    };
+  // ===== Optional Welcome Messages =====
+  const userMessages = {
+    "winston@gmail.com": "Welcome back, Winston! Hope you’re having a great day!",
+    "april@gmail.com": "Hi April! Glad to see you again 🌸",
+    "guest@gmail.com": "Hello guest! Enjoy your visit!",
+    "ken@gmail.com": "Hey Ken! Ready to take on the day?"
+  };
 
-    // ===== DOM Elements =====
-    const loginContainer = document.getElementById('loginContainer');
-    const chatContainer = document.getElementById('chatContainer');
-    const loginMessage = document.getElementById('loginMessage');
-    const welcomeMsg = document.getElementById('welcomeMsg');
-    const chatBox = document.getElementById('chatBox');
-    const messageInput = document.getElementById('messageInput');
+  // ===== DOM Elements =====
+  const loginContainer = document.getElementById('loginContainer');
+  const chatContainer = document.getElementById('chatContainer');
+  const loginMessage = document.getElementById('loginMessage');
+  const welcomeMsg = document.getElementById('welcomeMsg');
+  const chatBox = document.getElementById('chatBox');
+  const messageInput = document.getElementById('messageInput');
 
-    // ===== Login =====
-    document.getElementById('loginBtn').addEventListener('click', () => {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-
-      auth.signInWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          showChat(userCredential.user.email);
-          loginMessage.textContent = '';
-        })
-        .catch(error => {
-          loginMessage.style.color = 'red';
-          loginMessage.textContent = error.message;
-        });
-    });
-
-    // ===== Register =====
-    document.getElementById('registerBtn').addEventListener('click', () => {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          loginMessage.style.color = 'green';
-          loginMessage.textContent = "Registered successfully! Logging in...";
-          showChat(userCredential.user.email);
-        })
-        .catch(error => {
-          loginMessage.style.color = 'red';
-          loginMessage.textContent = error.message;
-        });
-    });
-
-    // ===== Show Global Chat =====
-    function showChat(email) {
-      loginContainer.style.display = 'none';
-      chatContainer.style.display = 'block';
-      welcomeMsg.textContent = userMessages[email.toLowerCase()] || `Welcome, ${email}!`;
-
-      // Real-time listener for all messages
-      db.collection('messages').orderBy('timestamp')
-        .onSnapshot(snapshot => {
-          chatBox.innerHTML = '';
-          snapshot.forEach(doc => {
-            const msg = doc.data();
-            const div = document.createElement('div');
-            div.classList.add('chatMessage');
-            div.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text}`;
-            chatBox.appendChild(div);
-          });
-          chatBox.scrollTop = chatBox.scrollHeight;
-        });
-    }
-
-    // ===== Send Message =====
-    document.getElementById('sendBtn').addEventListener('click', () => {
-      const text = messageInput.value.trim();
-      const user = auth.currentUser;
-      if(!text || !user) return;
-
-      db.collection('messages').add({
-        sender: user.email,
-        text: text,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  // ===== Email/Password Login =====
+  document.getElementById('loginBtn').addEventListener('click', () => {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    auth.signInWithEmailAndPassword(email, password)
+      .then(userCredential => showChat(userCredential.user.email))
+      .catch(error => {
+        loginMessage.style.color = 'red';
+        loginMessage.textContent = error.message;
       });
-      messageInput.value = '';
-    });
+  });
 
-    // ===== Logout =====
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      auth.signOut().then(() => {
-        chatContainer.style.display = 'none';
-        loginContainer.style.display = 'block';
-        loginMessage.style.color = 'black';
-        loginMessage.textContent = '';
+  // ===== Email/Password Register =====
+  document.getElementById('registerBtn').addEventListener('click', () => {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(userCredential => showChat(userCredential.user.email))
+      .catch(error => {
+        loginMessage.style.color = 'red';
+        loginMessage.textContent = error.message;
       });
+  });
+
+  // ===== Google Login =====
+  document.getElementById('googleBtn').addEventListener('click', () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+      .then(result => showChat(result.user.email))
+      .catch(error => {
+        loginMessage.style.color = 'red';
+        loginMessage.textContent = error.message;
+      });
+  });
+
+  // ===== Show Chat =====
+  function showChat(email) {
+    loginContainer.style.display = 'none';
+    chatContainer.style.display = 'block';
+    welcomeMsg.textContent = userMessages[email.toLowerCase()] || `Welcome, ${email}!`;
+
+    // Real-time listener
+    db.collection('messages').orderBy('timestamp')
+      .onSnapshot(snapshot => {
+        chatBox.innerHTML = '';
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          const div = document.createElement('div');
+          div.classList.add('chatMessage');
+          div.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text}`;
+          chatBox.appendChild(div);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+  }
+
+  // ===== Send Message =====
+  document.getElementById('sendBtn').addEventListener('click', () => {
+    const text = messageInput.value.trim();
+    const user = auth.currentUser;
+    if(!text || !user) return;
+
+    db.collection('messages').add({
+      sender: user.email,
+      text: text,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
-  </script>
+    messageInput.value = '';
+  });
+
+  // ===== Logout =====
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    auth.signOut().then(() => {
+      chatContainer.style.display = 'none';
+      loginContainer.style.display = 'block';
+      loginMessage.textContent = '';
+    });
+  });
+</script>
+
 </body>
 </html>
 
