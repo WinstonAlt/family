@@ -2,14 +2,70 @@
 <html>
 <head>
   <title>Admin Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    #loginBtn {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      background: #4285F4;
+      color: white;
+      border-radius: 6px;
+    }
+
+    #adminPanel {
+      margin-top: 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .item {
+      background: #fafafa;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border-left: 4px solid #4285F4;
+    }
+
+    .item button {
+      margin-right: 10px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .edit {
+      background: #ffa500;
+      color: white;
+    }
+    .delete {
+      background: #e53935;
+      color: white;
+    }
+  </style>
 </head>
 <body>
+
   <h1>Admin Page</h1>
 
   <!-- LOGIN BUTTON -->
   <button id="loginBtn">Sign in with Google</button>
 
-  <!-- ADMIN CONTENT (hidden until authorized) -->
+  <!-- ADMIN CONTENT -->
   <div id="adminPanel" style="display:none;">
     <h2>Messages</h2>
     <div id="items"></div>
@@ -32,7 +88,6 @@
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    // ✅ Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyAOmwkVoRJL98p6MrGyF7WjHjHQ84v8he4",
       authDomain: "messages-5d8fa.firebaseapp.com",
@@ -51,28 +106,35 @@
     const loginBtn = document.getElementById("loginBtn");
     const adminPanel = document.getElementById("adminPanel");
 
-    // ✅ Login handler
+    // ✅ Login
     loginBtn.addEventListener("click", async () => {
       try {
         await signInWithPopup(auth, provider);
-      } catch (error) {
+      } catch (e) {
         alert("Login failed!");
       }
     });
 
-    // ✅ Auth state
+    // ✅ Auth state watch
     onAuthStateChanged(auth, (user) => {
-      if (user && user.email === "winstoncao77@gmail.com") {
+      if (!user) {
+        adminPanel.style.display = "none";
+        loginBtn.style.display = "inline-block";
+        return;
+      }
+
+      // ✅ Replace YOUR email here
+      if (user.email === "winstoncao77@gmail.com") {
         loginBtn.style.display = "none";
         adminPanel.style.display = "block";
         loadItems();
       } else {
-        adminPanel.style.display = "none";
-        loginBtn.style.display = "block";
+        alert("You are not authorized.");
+        auth.signOut();
       }
     });
 
-    // ✅ Load Firestore docs
+    // ✅ Load documents
     async function loadItems() {
       const container = document.getElementById("items");
       container.innerHTML = "";
@@ -83,12 +145,12 @@
         const id = docSnap.id;
 
         const div = document.createElement("div");
+        div.classList.add("item");
         div.innerHTML = `
           <p><strong>ID:</strong> ${id}</p>
           <pre>${JSON.stringify(data, null, 2)}</pre>
           <button class="edit" data-id="${id}">Edit</button>
           <button class="delete" data-id="${id}">Delete</button>
-          <hr>
         `;
         container.appendChild(div);
       });
@@ -96,12 +158,12 @@
       attachButtons();
     }
 
-    // ✅ Edit and delete buttons
+    // ✅ Edit + Delete handlers
     function attachButtons() {
       document.querySelectorAll(".delete").forEach(btn => {
         btn.addEventListener("click", async () => {
+          if (!confirm("Delete this item?")) return;
           await deleteDoc(doc(db, "messages", btn.dataset.id));
-          alert("Deleted!");
           loadItems();
         });
       });
@@ -109,15 +171,16 @@
       document.querySelectorAll(".edit").forEach(btn => {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
-          const newValue = prompt("Enter new JSON:");
+          const newVal = prompt("Enter new JSON:");
+
+          if (!newVal) return;
 
           try {
-            const parsed = JSON.parse(newValue);
+            const parsed = JSON.parse(newVal);
             await updateDoc(doc(db, "messages", id), parsed);
-            alert("Updated!");
             loadItems();
           } catch {
-            alert("Invalid JSON");
+            alert("Invalid JSON format.");
           }
         });
       });
@@ -126,4 +189,3 @@
 
 </body>
 </html>
-
