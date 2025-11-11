@@ -67,7 +67,30 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // ===== Firebase Config =====
+  /* ===========================
+     COOKIE FUNCTIONS
+  ============================ */
+  function setCookie(name, value, days) {
+    const expires = days
+      ? "; expires=" + new Date(Date.now() + days * 864e5).toUTCString()
+      : "";
+    document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
+  }
+
+  function getCookie(name) {
+    return document.cookie
+      .split("; ")
+      .find(row => row.startsWith(name + "="))
+      ?.split("=")[1];
+  }
+
+  function deleteCookie(name) {
+    document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  }
+
+  /* ===========================
+     FIREBASE SETUP
+  ============================ */
   const firebaseConfig = {
     apiKey: "AIzaSyAOmwkVoRJL98p6MrGyF7WjHjHQ84v8he4",
     authDomain: "messages-5d8fa.firebaseapp.com",
@@ -78,12 +101,13 @@
     measurementId: "G-1XDBNNRKSD"
   };
 
-  // ===== Initialize Firebase =====
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  // ===== Optional Welcome Messages =====
+  /* ===========================
+     WELCOME MESSAGES
+  ============================ */
   const userMessages = {
     "winston@gmail.com": "Welcome back, Winston! Hope you’re having a great day!",
     "april@gmail.com": "Hi April! Glad to see you again 🌸",
@@ -91,7 +115,9 @@
     "ken@gmail.com": "Hey Ken! Ready to take on the day?"
   };
 
-  // ===== DOM Elements =====
+  /* ===========================
+     DOM ELEMENTS
+  ============================ */
   const loginContainer = document.getElementById('loginContainer');
   const chatContainer = document.getElementById('chatContainer');
   const loginMessage = document.getElementById('loginMessage');
@@ -99,48 +125,84 @@
   const chatBox = document.getElementById('chatBox');
   const messageInput = document.getElementById('messageInput');
 
-  // ===== Email/Password Login =====
+  /* ===========================
+     COOKIE AUTO-FILL + AUTO-LOGIN
+  ============================ */
+  const savedEmail = getCookie("email");
+  const savedPassword = getCookie("password");
+
+  if (savedEmail) document.getElementById("email").value = savedEmail;
+  if (savedPassword) document.getElementById("password").value = savedPassword;
+
+  if (savedEmail && savedPassword) {
+    auth.signInWithEmailAndPassword(savedEmail, savedPassword)
+      .then(userCred => showChat(userCred.user.email))
+      .catch(() => {});
+  }
+
+  /* ===========================
+     LOGIN
+  ============================ */
   document.getElementById('loginBtn').addEventListener('click', () => {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
+
     auth.signInWithEmailAndPassword(email, password)
-      .then(userCredential => showChat(userCredential.user.email))
+      .then(userCredential => {
+        setCookie("email", email, 365);
+        setCookie("password", password, 365);
+        showChat(email);
+      })
       .catch(error => {
         loginMessage.style.color = 'red';
         loginMessage.textContent = error.message;
       });
   });
 
-  // ===== Email/Password Register =====
+  /* ===========================
+     REGISTER
+  ============================ */
   document.getElementById('registerBtn').addEventListener('click', () => {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
+
     auth.createUserWithEmailAndPassword(email, password)
-      .then(userCredential => showChat(userCredential.user.email))
+      .then(userCredential => {
+        setCookie("email", email, 365);
+        setCookie("password", password, 365);
+        showChat(email);
+      })
       .catch(error => {
         loginMessage.style.color = 'red';
         loginMessage.textContent = error.message;
       });
   });
 
-  // ===== Google Login =====
+  /* ===========================
+     GOOGLE LOGIN
+  ============================ */
   document.getElementById('googleBtn').addEventListener('click', () => {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider)
-      .then(result => showChat(result.user.email))
+      .then(result => {
+        setCookie("email", result.user.email, 365);
+        deleteCookie("password"); // Google doesn’t need password
+        showChat(result.user.email);
+      })
       .catch(error => {
         loginMessage.style.color = 'red';
         loginMessage.textContent = error.message;
       });
   });
 
-  // ===== Show Chat =====
+  /* ===========================
+     SHOW CHAT UI
+  ============================ */
   function showChat(email) {
     loginContainer.style.display = 'none';
     chatContainer.style.display = 'block';
     welcomeMsg.textContent = userMessages[email.toLowerCase()] || `Welcome, ${email}!`;
 
-    // Real-time listener
     db.collection('messages').orderBy('timestamp')
       .onSnapshot(snapshot => {
         chatBox.innerHTML = '';
@@ -155,23 +217,31 @@
       });
   }
 
-  // ===== Send Message =====
+  /* ===========================
+     SEND MESSAGE
+  ============================ */
   document.getElementById('sendBtn').addEventListener('click', () => {
     const text = messageInput.value.trim();
     const user = auth.currentUser;
-    if(!text || !user) return;
+    if (!text || !user) return;
 
     db.collection('messages').add({
       sender: user.email,
-      text: text,
+      text,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
+
     messageInput.value = '';
   });
 
-  // ===== Logout =====
+  /* ===========================
+     LOGOUT
+  ============================ */
   document.getElementById('logoutBtn').addEventListener('click', () => {
     auth.signOut().then(() => {
+      deleteCookie("email");
+      deleteCookie("password");
+
       chatContainer.style.display = 'none';
       loginContainer.style.display = 'block';
       loginMessage.textContent = '';
@@ -181,4 +251,3 @@
 
 </body>
 </html>
-
