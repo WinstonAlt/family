@@ -1,64 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Login</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      background: #f7f7f7;
-    }
-    h1 { color: #333; }
-    button {
-      padding: 10px 20px;
-      margin: 5px;
-      font-size: 16px;
-      cursor: pointer;
-      border: none;
-      border-radius: 4px;
-    }
-    #googleSignInBtn { background-color: #4285F4; color: white; }
-    #signOutBtn { background-color: #d9534f; color: white; }
-    #adminContent {
-      display: none;
-      margin-top: 30px;
-      padding: 20px;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    body.admin-logged-in #adminContent {
-      display: block;
-    }
-  </style>
+  <title>Admin Panel</title>
 </head>
 <body>
-  <h1>Admin Login</h1>
-  <p id="status">Checking login...</p>
-  <button id="googleSignInBtn">Sign in with Google</button>
-  <button id="signOutBtn">Sign Out</button>
+  <h1>Admin Page</h1>
 
-  <div id="adminContent">
-    <h2>Welcome, Admin!</h2>
-    <p>You are logged in as the authorized account.</p>
-    <p>You can now manage your data or add more controls here.</p>
+  <!-- LOGIN BUTTON -->
+  <button id="loginBtn">Sign in with Google</button>
+
+  <!-- ADMIN CONTENT (hidden until authorized) -->
+  <div id="adminPanel" style="display:none;">
+    <h2>Messages</h2>
+    <div id="items"></div>
   </div>
 
   <script type="module">
-    // Import Firebase SDKs from the CDN
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      doc,
+      updateDoc,
+      deleteDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import {
       getAuth,
       GoogleAuthProvider,
       signInWithPopup,
-      signOut,
       onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    // 🔧 Your Firebase config
+    // ✅ Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyAOmwkVoRJL98p6MrGyF7WjHjHQ84v8he4",
       authDomain: "messages-5d8fa.firebaseapp.com",
@@ -69,58 +43,87 @@
       measurementId: "G-1XDBNNRKSD"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    // 🧑‍💻 Replace with *your* Google account email
-    const ADMIN_EMAIL = "winstoncao77@gmail.com"; // <--- CHANGE THIS
+    const loginBtn = document.getElementById("loginBtn");
+    const adminPanel = document.getElementById("adminPanel");
 
-    // ------------------------------
-    // 🔐 Google Sign-In
-    // ------------------------------
-    document.getElementById("googleSignInBtn").addEventListener("click", async () => {
+    // ✅ Login handler
+    loginBtn.addEventListener("click", async () => {
       try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-
-        if (user.email !== ADMIN_EMAIL) {
-          alert("Access denied. Only the admin can sign in.");
-          await signOut(auth);
-        }
+        await signInWithPopup(auth, provider);
       } catch (error) {
-        console.error("Error signing in:", error);
-        alert("Sign-in failed.");
+        alert("Login failed!");
       }
     });
 
-    // 🔓 Sign Out
-    document.getElementById("signOutBtn").addEventListener("click", async () => {
-      await signOut(auth);
-      document.getElementById("status").textContent = "Signed out.";
-      document.body.classList.remove("admin-logged-in");
-    });
-
-    // ------------------------------
-    // 👀 Watch for login state
-    // ------------------------------
+    // ✅ Auth state
     onAuthStateChanged(auth, (user) => {
-      const status = document.getElementById("status");
-
-      if (user && user.email === ADMIN_EMAIL) {
-        status.textContent = `✅ Logged in as admin: ${user.email}`;
-        document.body.classList.add("admin-logged-in");
-      } else if (user && user.email !== ADMIN_EMAIL) {
-        status.textContent = "❌ Not authorized.";
-        document.body.classList.remove("admin-logged-in");
-        signOut(auth);
+      if (user && user.email === "winstoncao77@gmail.com") {
+        loginBtn.style.display = "none";
+        adminPanel.style.display = "block";
+        loadItems();
       } else {
-        status.textContent = "Not signed in.";
-        document.body.classList.remove("admin-logged-in");
+        adminPanel.style.display = "none";
+        loginBtn.style.display = "block";
       }
     });
+
+    // ✅ Load Firestore docs
+    async function loadItems() {
+      const container = document.getElementById("items");
+      container.innerHTML = "";
+
+      const querySnapshot = await getDocs(collection(db, "messages"));
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const id = docSnap.id;
+
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <p><strong>ID:</strong> ${id}</p>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+          <button class="edit" data-id="${id}">Edit</button>
+          <button class="delete" data-id="${id}">Delete</button>
+          <hr>
+        `;
+        container.appendChild(div);
+      });
+
+      attachButtons();
+    }
+
+    // ✅ Edit and delete buttons
+    function attachButtons() {
+      document.querySelectorAll(".delete").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await deleteDoc(doc(db, "messages", btn.dataset.id));
+          alert("Deleted!");
+          loadItems();
+        });
+      });
+
+      document.querySelectorAll(".edit").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.id;
+          const newValue = prompt("Enter new JSON:");
+
+          try {
+            const parsed = JSON.parse(newValue);
+            await updateDoc(doc(db, "messages", id), parsed);
+            alert("Updated!");
+            loadItems();
+          } catch {
+            alert("Invalid JSON");
+          }
+        });
+      });
+    }
   </script>
+
 </body>
 </html>
+
