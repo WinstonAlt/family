@@ -157,7 +157,7 @@
       signInWithPopup,
       onAuthStateChanged,
       setPersistence,
-      browserLocalPersistence
+      browserSessionPersistence
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     const firebaseConfig = {
@@ -174,7 +174,7 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
-    setPersistence(auth, browserLocalPersistence);
+    setPersistence(auth, browserSessionPersistence);
 
     const loginBtn = document.getElementById("loginBtn");
     const adminPanel = document.getElementById("adminPanel");
